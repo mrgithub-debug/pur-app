@@ -9,7 +9,7 @@ Eine leichtgewichtige Web-App, mit der du Produkte nach **Inhaltsstoffen**, **Um
 - **Suche** nach Produktname, Marke oder Barcode-Nummer (EAN-8/-13, UPC-A/-E, GTIN-14) mit Prüfziffer-Kontrolle
 - **Kamera-Scan**: Die Erkennung wird je nach Browser gewählt (siehe unten). Alternativ gehen Foto-Upload oder die Eingabe der Nummer.
 - **Produktdetail** mit Tabs:
-  - *Inhaltsstoffe*: vegan/vegetarisch/Palmöl, Allergene & Spuren, Zusatzstoffe mit deutscher Bezeichnung und Funktion, Zutaten mit Anteilen, Originaltext
+  - *Inhaltsstoffe*: vegan/vegetarisch/Palmöl, Allergene & Spuren, Zusatzstoffe mit deutscher Bezeichnung und Funktion, Zutaten mit Anteilen, Originaltext. Jede Zutat und jeder Zusatzstoff hat einen **„W“-Link zu Wikipedia**: Über die Wikidata-Verknüpfung der OFF-Taxonomie öffnet er direkt den deutschen Artikel (sonst den englischen). Ohne Verknüpfung öffnet er die Wikipedia-Suche zum Begriff.
   - *Umwelt*: Green-Score mit Boni/Abzügen und fehlenden Angaben, Verpackungsbestandteile & Entsorgung, Siegel
   - *Lieferkette*: CO₂ je Phase (Landwirtschaft → Verarbeitung → Verpackung → Transport → Handel → Verbrauch), Herkunft der Zutaten, Herstellungsort, Verpackercode, Marke & Hersteller (Wikidata), Verkaufsländer, GS1-Registrierungsland
   - *Nährwerte* (bei Lebensmitteln)
@@ -26,7 +26,8 @@ Eine leichtgewichtige Web-App, mit der du Produkte nach **Inhaltsstoffen**, **Um
 | [Open Pet Food Facts](https://world.openpetfoodfacts.org) | Tierbedarf | ODbL / DbCL |
 | [Open Products Facts](https://world.openproductsfacts.org) | Haushalt & Sonstiges | ODbL / DbCL |
 | OFF-Taxonomien | deutsche Begriffe (Zusatzstoffe, Siegel, Verpackung, Länder) | ODbL |
-| [Wikidata](https://www.wikidata.org) | Marke & Hersteller | CC0 |
+| [Wikidata](https://www.wikidata.org) | Marke & Hersteller, Verknüpfung Zutat → Artikel | CC0 |
+| [Wikipedia](https://de.wikipedia.org) | Beschreibungen der Zutaten & Zusatzstoffe (verlinkt) | CC BY-SA 4.0 |
 | [Agribalyse (ADEME)](https://agribalyse.ademe.fr) | Ökobilanz-Grundlage (über OFF) | Etalab 2.0 |
 | GS1-Präfixliste (in `js/barcode.js`) | Registrierungsland des Barcodes | – |
 

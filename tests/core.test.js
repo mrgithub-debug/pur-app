@@ -109,3 +109,18 @@ test('Zeitüberschreitung', async () => {
   const { fetchJson } = await import('../js/api.js');
   await assert.rejects(fetchJson('https://world.openfoodfacts.org/x', { timeout: 30 }), (e) => e.code === 'SOURCE_TIMEOUT');
 });
+
+test('Wikipedia: Taxonomie → Wikidata → Artikel (de bevorzugt, en als Rückfall)', async () => {
+  const { taxonomyNames, wikipediaLinks, wikipediaSearchUrl } = await import('../js/enrich.js');
+  mockFetch((u) => {
+    if (u.includes('/api/v2/taxonomy')) return json(200, { 'en:oat': { name: { de: 'Hafer' }, wikidata: { en: 'Q165137' } }, 'en:e340': { name: { de: 'E340' }, wikidata: { en: 'Q2' } } });
+    if (u.includes('wbgetentities')) return json(200, { entities: { Q165137: { sitelinks: { dewiki: { title: 'Saat-Hafer' }, enwiki: { title: 'Oat' } } }, Q2: { sitelinks: { enwiki: { title: 'Potassium phosphate' } } } } });
+    return json(404, {});
+  });
+  const tax = await taxonomyNames('https://world.openfoodfacts.org', 'ingredients', ['en:oat', 'en:e340']);
+  assert.equal(tax['en:oat'].qid, 'Q165137');
+  const links = await wikipediaLinks([tax['en:oat'].qid, tax['en:e340'].qid, 'kaputt']);
+  assert.equal(links.Q165137.url, 'https://de.wikipedia.org/wiki/Saat-Hafer');
+  assert.equal(links.Q2.lang, 'en');
+  assert.match(wikipediaSearchUrl('Hafer (10 %)'), /search=Hafer&/);
+});

@@ -4,6 +4,7 @@ import { SOURCES, productUrl } from './api.js';
 export const LICENSES = {
   odbl: { name: 'Open Database License (ODbL) 1.0 – Datenbank; Database Contents License – Inhalte', url: 'https://opendatacommons.org/licenses/odbl/1-0/' },
   ccbysa: { name: 'CC BY-SA 3.0 – Fotos der Mitwirkenden', url: 'https://creativecommons.org/licenses/by-sa/3.0/deed.de' },
+  ccbysa4: { name: 'CC BY-SA 4.0 – Texte der Wikipedia', url: 'https://creativecommons.org/licenses/by-sa/4.0/deed.de' },
   cc0: { name: 'CC0 1.0 – gemeinfrei', url: 'https://creativecommons.org/publicdomain/zero/1.0/deed.de' },
   etalab: { name: 'Licence Ouverte / Etalab 2.0', url: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence/' },
   mit: { name: 'MIT-Lizenz', url: 'https://opensource.org/license/mit' },
@@ -66,3 +67,11 @@ export function searchCitation(res) {
 export const scannerCitation = (engine) => engine === 'native'
   ? { title: 'Barcode-Erkennung', provider: 'Eingebaute BarcodeDetector-API des Browsers', url: 'https://developer.mozilla.org/de/docs/Web/API/Barcode_Detection_API', urlLabel: 'Dokumentation (MDN)', about: 'Die Erkennung läuft im Browser auf deinem Gerät; es werden keine Bilder übertragen.' }
   : { title: 'Barcode-Erkennung', provider: 'ZXing-C++ (WebAssembly) über das Paket „barcode-detector“', url: 'https://github.com/Sec-ant/barcode-detector', urlLabel: 'Projekt auf GitHub', license: LICENSES.mit, about: 'Freie Erkennungs-Software, wird von cdn.jsdelivr.net geladen und läuft lokal auf deinem Gerät; es werden keine Bilder übertragen.', note: 'ZXing-C++ steht unter der Apache-Lizenz 2.0.' };
+
+export const wikiCitation = () => ({
+  title: 'Links zu Wikipedia', provider: 'Wikipedia (verknüpft über Wikidata)',
+  url: 'https://de.wikipedia.org/', urlLabel: 'Wikipedia öffnen', license: LICENSES.ccbysa4,
+  about: 'Die Taxonomie von Open Food Facts ordnet vielen Zutaten und Zusatzstoffen einen Wikidata-Eintrag zu. Darüber führt der „W“-Link direkt zum deutschen Wikipedia-Artikel – gibt es keinen, zum englischen. Ist keine Verknüpfung vorhanden, öffnet der Link die Wikipedia-Suche zum Begriff.',
+  note: 'Die Zuordnung erfolgt automatisch. Bei allgemeinen Begriffen (z. B. „Öl“) kann der Artikel allgemeiner sein als die konkrete Zutat.',
+  more: [{ label: 'Wikidata', url: 'https://www.wikidata.org/' }]
+});

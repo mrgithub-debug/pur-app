@@ -153,6 +153,16 @@ table.nutri { width: 100%; border-collapse: collapse; font-size: 14px; }
 .nutri tr:first-child th, .nutri tr:first-child td { border-top: none; }
 .detail-foot { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 24px; }
 
+/* Wikipedia-Links */
+.ing { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wiki { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: #5A4744; font-family: var(--serif); font-weight: 600; font-size: 13px; text-decoration: none; flex-shrink: 0; position: relative; }
+.wiki::after { content: ''; position: absolute; inset: -8px; }
+.wiki:hover { border-color: var(--accent); color: var(--accent); }
+.wiki.is-direct { background: var(--blush); border-color: var(--blush); color: var(--accent-dark); }
+.wiki-demo { position: static; vertical-align: middle; margin-right: 2px; }
+.wiki-demo::after { display: none; }
+.wiki-note { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px !important; }
+
 /* Quellen-Knopf */
 .cite { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 4px 10px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); color: #5A4744; font-size: 12px; font-weight: 500; flex-shrink: 0; }
 .cite:hover { border-color: var(--accent); color: var(--accent); }

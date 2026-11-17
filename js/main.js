@@ -2,8 +2,8 @@
 import { AppError } from './errors.js';
 import { SOURCES, getProduct, searchProducts } from './api.js';
 import { isDigits, VALID_LENGTHS, checksumOk, cleanCode, gs1Region } from './barcode.js';
-import { taxonomyNames, wikidataBrand, enrichError } from './enrich.js';
-import { productCitations, wikidataCitation, searchCitation, scannerCitation, LICENSES } from './sources.js';
+import { taxonomyNames, wikidataBrand, enrichError, wikipediaLinks, wikipediaSearchUrl } from './enrich.js';
+import { productCitations, wikidataCitation, searchCitation, scannerCitation, wikiCitation, LICENSES } from './sources.js';
 import * as store from './store.js';
 import * as scan from './scanner.js';
 import { permissionHelp } from './browser.js';
@@ -262,7 +262,7 @@ function renderProduct(result) {
   const { product: p, sourceId } = result;
   const src = SOURCES[sourceId];
   const cites = productCitations(result);
-  setCitations(cites);
+  setCitations({ ...cites, wiki: wikiCitation() });
   const name = p.product_name_de || p.product_name || 'Unbenanntes Produkt';
   const img = p.image_front_url || p.image_url;
   const isFood = sourceId === 'off';
@@ -339,6 +339,10 @@ const chip = (text, tone = 'neutral') => `<span class="pill pill-${tone}">${esc(
 const box = (title, citeId, body, extra = '') => `<div class="box"><div class="box-head"><h2>${esc(title)}</h2>${citeId ? citeBtn(citeId) : ''}</div>${body}${extra}</div>`;
 const empty = (text, src, p) => `<p class="empty">${esc(text)} <a href="${safeUrl(`${src.base}/product/${encodeURIComponent(p.code)}`)}" target="_blank" rel="noopener">Bei ${esc(src.name)} ergänzen</a></p>`;
 
+// Link zu einer Beschreibung bei Wikipedia: zuerst Wikipedia-Suche, nach der Anreicherung direkter Artikel
+const wikiLink = (tag, label, tt = 'ingredients') => `<a class="wiki" href="${esc(wikipediaSearchUrl(label))}" target="_blank" rel="noopener" data-wiki="${esc(tag || '')}" data-wiki-tt="${tt}" aria-label="${esc(label)} bei Wikipedia nachschlagen (Suche)" title="Bei Wikipedia nachschlagen">W</a>`;
+const wikiNote = `<p class="wiki-note muted small"><span class="wiki wiki-demo" aria-hidden="true">W</span> öffnet eine Beschreibung bei Wikipedia. ${citeBtn('wiki', 'Quelle der Links')}</p>`;
+
 function panelIngredients(p, src) {
   const analysis = (p.ingredients_analysis_tags || []).map((t) => ANALYSIS[t]).filter(Boolean);
   const allergens = p.allergens_tags || [];
@@ -353,7 +357,8 @@ function panelIngredients(p, src) {
     if (addSet.has(i.id)) flags.push('<span class="flag flag-add">Zusatzstoff</span>');
     if (i.from_palm_oil === 'yes') flags.push('<span class="flag flag-warn">Palmöl</span>');
     if (i.vegan === 'no') flags.push('<span class="flag">nicht vegan</span>');
-    return `<li><span>${esc(i.text || prettyTag(i.id))}</span><span class="row-right">${flags.join('')}<span class="muted">${esc(pct)}</span></span></li>`;
+    const label = i.text || prettyTag(i.id);
+    return `<li><span class="ing">${esc(label)}${wikiLink(i.id, label)}</span><span class="row-right">${flags.join('')}<span class="muted">${esc(pct)}</span></span></li>`;
   }).join('');
   return `
     ${analysis.length ? `<div class="pills-row">${analysis.map((a) => chip(a.text, a.tone)).join('')}${citeBtn('analysis')}</div>` : ''}
@@ -362,10 +367,10 @@ function panelIngredients(p, src) {
       ${traces.length ? `<p><strong>Kann Spuren enthalten von:</strong> ${traces.map((t) => `<span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span>`).join(', ')}</p>` : ''}`
       : '<p class="muted">Keine Allergene erfasst. Das heißt nicht, dass keine enthalten sind – bitte die Verpackung prüfen.</p>')}
     ${box(`Zusatzstoffe (${additives.length})`, 'additives', additives.length
-      ? `<ul class="rows" id="additives">${additives.map((t) => `<li><span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span><span class="muted small add-class" data-class-for="${esc(t)}"></span></li>`).join('')}</ul>`
-      : '<p class="muted">Keine Zusatzstoffe erkannt.</p>')}
+      ? `<ul class="rows" id="additives">${additives.map((t) => `<li><span class="ing"><span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span>${wikiLink(t, prettyTag(t), 'additives')}</span><span class="muted small add-class" data-class-for="${esc(t)}"></span></li>`).join('')}</ul>`
+      : '<p class="muted">Keine Zusatzstoffe erkannt.</p>', additives.length ? wikiNote : '')}
     ${box('Zutaten', 'ingredients', ingr.length
-      ? `<ul class="rows">${rows}</ul>${ingr.length > 40 ? `<p class="muted small">… und ${ingr.length - 40} weitere</p>` : ''}`
+      ? `<ul class="rows">${rows}</ul>${ingr.length > 40 ? `<p class="muted small">… und ${ingr.length - 40} weitere</p>` : ''}${wikiNote}`
       : (text ? '' : empty('Für dieses Produkt ist keine Zutatenliste erfasst.', src, p)),
       `${text ? `<details class="raw"><summary>Originaltext der Verpackung</summary><p>${esc(text)}</p>${p.image_ingredients_url ? `<a href="${safeUrl(p.image_ingredients_url)}" target="_blank" rel="noopener">Foto der Zutatenliste ansehen ${icon.ext}</a>` : ''}</details>` : ''}`)}
     <div class="enrich-msgs" data-enrich="inhalt"></div>`;
@@ -455,6 +460,35 @@ function panelNutrition(p) {
   return box('Nährwerte je 100 g / 100 ml', 'nutrition', rows ? `<table class="nutri"><tbody>${rows}</tbody></table>` : '<p class="muted">Keine Nährwerte erfasst.</p>');
 }
 
+async function linkWikipedia(result, signal, note) {
+  const els = [...view.querySelectorAll('a.wiki[data-wiki]')].filter((a) => a.dataset.wiki);
+  if (!els.length) return;
+  const byTt = {};
+  els.forEach((a) => (byTt[a.dataset.wikiTt] = byTt[a.dataset.wikiTt] || new Set()).add(a.dataset.wiki));
+  try {
+    // Zutaten aus der Taxonomie der jeweiligen Datenbank, Zusatzstoffe aus Open Food Facts
+    const tax = {};
+    for (const [tt, set] of Object.entries(byTt)) {
+      const base = tt === 'ingredients' ? SOURCES[result.sourceId].base : OFF;
+      tax[tt] = await taxonomyNames(base, tt, [...set]);
+    }
+    const qids = Object.values(tax).flatMap((m) => Object.values(m).map((e) => e && e.qid)).filter(Boolean);
+    const links = await wikipediaLinks(qids);
+    if (signal.aborted) return;
+    els.forEach((a) => {
+      const e = tax[a.dataset.wikiTt] && tax[a.dataset.wikiTt][a.dataset.wiki];
+      const l = e && e.qid && links[e.qid];
+      if (!l) return;
+      a.href = l.url;
+      a.classList.add('is-direct');
+      a.setAttribute('aria-label', `Artikel „${l.title}“ bei Wikipedia${l.lang === 'en' ? ' (englisch)' : ''}`);
+      a.title = `Wikipedia: ${l.title}${l.lang === 'en' ? ' (englisch)' : ''}`;
+    });
+  } catch (err) {
+    note('inhalt', enrichError('Wikidata/Wikipedia', 'Die direkten Wikipedia-Artikel für Zutaten und Zusatzstoffe konnten nicht ermittelt werden. Die „W“-Links öffnen deshalb die Wikipedia-Suche zum jeweiligen Begriff.', err));
+  }
+}
+
 const taxType = (el) => el.dataset.tt || (el.closest('#additives') ? 'additives' : 'allergens');
 
 /** Lädt deutsche Begriffe und Herstellerdaten nach; Fehler werden als Hinweis angezeigt. */
@@ -498,6 +532,8 @@ async function enrich(result, signal) {
       }
     }
   }));
+  // Wikipedia-Links für Zutaten & Zusatzstoffe
+  await linkWikipedia(result, signal, note);
   // Wikidata – Hersteller
   if (p.brands) {
     try {

@@ -10,7 +10,7 @@ export async function taxonomyNames(base, tagtype, tags) {
   if (!uniq.length) return {};
   const key = `${base}|${tagtype}|${uniq.join(',')}`;
   if (memo.has(key)) return memo.get(key);
-  const params = new URLSearchParams({ tagtype, tags: uniq.join(','), fields: 'name,additives_classes', lc: 'de' });
+  const params = new URLSearchParams({ tagtype, tags: uniq.join(','), fields: 'name,additives_classes,wikidata', lc: 'de' });
   const url = `${base}/api/v2/taxonomy?${params}`;
   const { json } = await fetchJson(url, { sourceName: 'Open Food Facts (Taxonomie)', timeout: 10000 });
   const out = {};
@@ -19,7 +19,9 @@ export async function taxonomyNames(base, tagtype, tags) {
     if (!e) continue;
     const n = e.name;
     const name = typeof n === 'string' ? n : n && (n.de || n.en || Object.values(n)[0]);
-    out[t] = { name, classes: e.additives_classes && e.additives_classes.en ? e.additives_classes.en : null, url };
+    const wd = e.wikidata;
+    const qid = typeof wd === 'string' ? wd : wd && (wd.en || Object.values(wd)[0]);
+    out[t] = { name, classes: e.additives_classes && e.additives_classes.en ? e.additives_classes.en : null, qid: /^Q\d+$/.test(qid || '') ? qid : null, url };
   }
   out.__url = url;
   memo.set(key, out);
@@ -77,6 +79,33 @@ export async function wikidataBrand(brand) {
   };
   memo.set(key, result);
   return result;
+}
+
+/** Suchlink zur deutschen Wikipedia (Rückfall, wenn kein Artikel verknüpft ist). */
+export function wikipediaSearchUrl(text) {
+  const q = String(text || '').replace(/\(.*?\)|\d+([.,]\d+)?\s*%/g, '').replace(/^[a-z]{2,3}:/, '').replace(/-/g, ' ').trim();
+  return `https://de.wikipedia.org/w/index.php?${new URLSearchParams({ search: q, ns0: '1' })}`;
+}
+
+/**
+ * Löst Wikidata-IDs in Wikipedia-Artikel auf (deutsch bevorzugt, sonst englisch).
+ * Ergebnis: { Q123: { url, title, lang } } – IDs ohne Artikel fehlen im Ergebnis.
+ */
+export async function wikipediaLinks(qids) {
+  const uniq = [...new Set(qids.filter((q) => /^Q\d+$/.test(q || '')))];
+  const out = {};
+  for (let i = 0; i < uniq.length; i += 50) {
+    const batch = uniq.slice(i, i + 50);
+    const params = new URLSearchParams({ action: 'wbgetentities', ids: batch.join('|'), props: 'sitelinks', sitefilter: 'dewiki|enwiki', format: 'json', origin: '*' });
+    const { json } = await fetchJson(`${WD}?${params}`, { sourceName: 'Wikidata', timeout: 8000 });
+    for (const q of batch) {
+      const links = json && json.entities && json.entities[q] && json.entities[q].sitelinks;
+      if (!links) continue;
+      const l = links.dewiki ? ['de', links.dewiki.title] : links.enwiki ? ['en', links.enwiki.title] : null;
+      if (l) out[q] = { lang: l[0], title: l[1], url: `https://${l[0]}.wikipedia.org/wiki/${encodeURIComponent(l[1].replace(/ /g, '_'))}` };
+    }
+  }
+  return out;
 }
 
 export function enrichError(sourceName, effect, err) {
