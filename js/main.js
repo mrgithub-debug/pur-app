@@ -1,4 +1,4 @@
-// Produktprüfer – Einstieg, Router und Ansichten.
+// Pur. – Einstieg, Router und Ansichten.
 import { AppError } from './errors.js';
 import { SOURCES, getProduct, searchProducts } from './api.js';
 import { isDigits, VALID_LENGTHS, checksumOk, cleanCode, gs1Region } from './barcode.js';
@@ -143,7 +143,7 @@ function homeView() {
   const hist = store.getHistory();
   view.innerHTML = `<div class="page">
     <header class="top">
-      <div><p class="kicker">Inhaltsstoffe &amp; Öko-Fußabdruck</p><h1 class="display">Was steckt drin?</h1></div>
+      <div><p class="wordmark">Pur<span>.</span></p><h1 class="display">Nur das, was drin ist.</h1><p class="kicker">Inhaltsstoffe, Umwelt &amp; Lieferkette – mit offenen Daten</p></div>
       <a class="icon-btn soft" href="#/quellen" aria-label="Quellen und Informationen">${icon.info}</a>
     </header>
     ${searchForm()}

@@ -1,4 +1,6 @@
-# Produktprüfer – Was steckt drin?
+# Pur.
+
+**Nur das, was drin ist.**
 
 Eine leichtgewichtige Web-App, mit der du Produkte nach **Inhaltsstoffen**, **Umweltwirkung (Green-Score)** und **Lieferkette (CO₂ je Lebenszyklus-Phase)** prüfen kannst. Sie arbeitet ausschließlich mit offenen Daten, ohne KI und ohne Tracking. Das Design ist im Pinterest-Stil („Blush Pinboard“) gehalten.
 
