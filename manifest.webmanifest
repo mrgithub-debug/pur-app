@@ -1,0 +1,10 @@
+{
+  "name": "Produktprüfer – Was steckt drin?",
+  "short_name": "Produktprüfer",
+  "lang": "de",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FBF5F2",
+  "theme_color": "#FBF5F2",
+  "icons": [{ "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

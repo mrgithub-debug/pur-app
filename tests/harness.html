@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testumgebung (Beispieldaten)</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+  <!-- Lokale Testumgebung: ersetzt fetch durch Beispieldaten. Aufruf: tests/harness.html#/produkt/1234567890128 -->
+  <div id="net-banner" hidden></div>
+  <div id="global-msg" hidden></div>
+  <main id="view"></main>
+  <nav class="nav" aria-label="Hauptnavigation">
+    <a href="#/" data-route=""><span>Entdecken</span></a><a href="#/suche" data-route="suche"><span>Suchen</span></a>
+    <a href="#/scan" data-route="scan"><span>Scannen</span></a><a href="#/merkliste" data-route="merkliste"><span>Merkliste</span></a>
+  </nav>
+  <script type="module">
+    const product = {
+      code: '1234567890128', product_name_de: 'Hafer-Drink Natur (Beispiel)', brands: 'Beispielmarke', quantity: '1 l',
+      last_modified_t: 1760000000, nutriscore_grade: 'b', nova_group: 3,
+      environmental_score_grade: 'a', environmental_score_score: 82,
+      environmental_score_data: {
+        missing: { origins: 1 },
+        adjustments: { production_system: { value: 5 }, packaging: { value: -6 }, origins_of_ingredients: { value: -2, aggregated_origins: [{ origin: 'en:unknown', percent: 100 }] } },
+        agribalyse: { co2_agriculture: 0.21, co2_processing: 0.08, co2_packaging: 0.12, co2_transportation: 0.06, co2_distribution: 0.03, co2_consumption: 0, co2_total: 0.5, name_en: 'Oat drink, plain' }
+      },
+      ingredients_analysis_tags: ['en:palm-oil-free', 'en:vegan', 'en:vegetarian'],
+      allergens_tags: ['en:gluten'], traces_tags: [], additives_tags: ['en:e340'],
+      ingredients: [{ id: 'en:water', text: 'Wasser', percent_estimate: 88 }, { id: 'en:oat', text: 'Hafer', percent: 10 }, { id: 'en:rapeseed-oil', text: 'Rapsöl', percent_estimate: 1.5 }, { id: 'en:e340', text: 'Kaliumphosphat', percent_estimate: 0.3 }],
+      ingredients_text_de: 'Wasser, Hafer 10 %, Rapsöl, Säureregulator: Kaliumphosphat, Salz.',
+      packagings: [{ number_of_units: 1, shape: 'en:brick', material: 'en:tetra-pak', recycling: 'en:recycle' }, { shape: 'en:lid', material: 'en:hdpe-high-density-polyethylene' }],
+      labels_tags: ['en:organic', 'en:eu-organic'], countries_tags: ['en:germany', 'en:austria'], stores: 'Beispielmarkt',
+      manufacturing_places: 'Deutschland', nutriments: { 'energy-kcal_100g': 46, fat_100g: 1.5, sugars_100g: 4, proteins_100g: 0.6, salt_100g: 0.1 }
+    };
+    const res = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    window.fetch = async (url) => {
+      url = String(url);
+      await new Promise((r) => setTimeout(r, 150));
+      if (url.includes('/api/v2/product/1234567890128')) return url.includes('openfoodfacts.org') ? res(200, { status: 1, product }) : res(404, { status: 0 });
+      if (url.includes('/api/v2/product/')) return url.includes('openpetfoodfacts') ? res(503, {}) : res(404, { status: 0 });
+      if (url.includes('/api/v2/taxonomy')) return res(200, { 'en:e340': { name: { de: 'E340 – Kaliumphosphate' }, additives_classes: { en: 'en:acidity-regulator' } }, 'en:gluten': { name: { de: 'Gluten' } }, 'en:organic': { name: { de: 'Bio' } }, 'en:eu-organic': { name: { de: 'EU-Bio-Logo' } }, 'en:germany': { name: { de: 'Deutschland' } }, 'en:austria': { name: { de: 'Österreich' } }, 'en:brick': { name: { de: 'Getränkekarton' } }, 'en:tetra-pak': { name: { de: 'Tetra Pak' } }, 'en:recycle': { name: { de: 'Recyceln' } } });
+      if (url.includes('wikidata')) throw new TypeError('Failed to fetch');
+      if (url.includes('search.pl')) {
+        if (url.includes('openbeautyfacts')) return res(503, {});
+        return res(200, { count: 3, products: [product, { ...product, code: '2', product_name_de: 'Dinkel-Cracker', environmental_score_grade: 'b' }, { ...product, code: '3', product_name_de: 'Linsen rot', environmental_score_grade: 'c' }] });
+      }
+      return res(404, {});
+    };
+    await import('../js/main.js');
+    const tab = new URLSearchParams(location.search).get('tab');
+    const click = new URLSearchParams(location.search).get('click');
+    if (click) setTimeout(() => { const b = document.querySelector(`[data-action="${click}"]`); if (b) b.click(); }, 1500);
+    if (tab) setTimeout(() => { const b = document.getElementById('tab-' + tab); if (b) b.click(); }, 1500);
+  </script>
+</body>
+</html>

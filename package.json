@@ -1,0 +1,12 @@
+{
+  "name": "produktpruefer-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Leichtgewichtige Web-App zum Prüfen von Produkten nach Inhaltsstoffen und Umweltwirkung – mit offenen Daten.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "npx --yes serve -l 8080 ."
+  },
+  "license": "MIT"
+}
