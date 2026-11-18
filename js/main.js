@@ -8,6 +8,8 @@ import * as store from './store.js';
 import * as scan from './scanner.js';
 import { permissionHelp } from './browser.js';
 import { esc, safeUrl, icon, citeBtn, errorCard, openSheet, closeSheet, citationHtml, toast, GRADE_COLORS, gradeLabel, pinCard } from './ui.js';
+import { impressumHtml, datenschutzHtml, nutzungHtml, legalNav, noticeHtml, NOTICE_KEY } from './legal.js';
+import { legalComplete } from './legal-config.js';
 import { prettyTag, tagName, ANALYSIS, NOVA, NUTRIENTS, LCA_STAGES, GREEN_ADJ, MISSING, num } from './labels.js';
 
 const view = document.getElementById('view');
@@ -25,7 +27,10 @@ const routes = [
   [/^#\/produkt\/([^?/]+)$/, productView],
   [/^#\/scan$/, scanView],
   [/^#\/merkliste$/, savedView],
-  [/^#\/quellen$/, sourcesView]
+  [/^#\/quellen$/, sourcesView],
+  [/^#\/impressum$/, () => legalView('Impressum', 'Rechtliches', impressumHtml())],
+  [/^#\/datenschutz$/, () => legalView('Datenschutz', 'Rechtliches', datenschutzHtml())],
+  [/^#\/nutzung$/, () => legalView('Nutzungshinweise & Haftung', 'Rechtliches', nutzungHtml())]
 ];
 
 let navCount = 0;
@@ -52,6 +57,8 @@ document.addEventListener('click', (e) => {
   if (a) {
     const name = a.dataset.action;
     if (name === 'retry' && current.retry) { e.preventDefault(); current.retry(); return; }
+    if (name === 'revokeZxing') { e.preventDefault(); store.setZxingConsent(false); toast('Einwilligung widerrufen – die Barcode-Erkennung wird nicht mehr geladen'); return; }
+    if (name === 'clearLocal') { e.preventDefault(); store.clearAll(); toast('Alle lokal gespeicherten Daten wurden gelöscht'); return; }
     if (name === 'back') { e.preventDefault(); if (navCount > 1) history.back(); else location.hash = '#/'; return; }
     if (current.actions[name]) { e.preventDefault(); current.actions[name](a, e); }
   }
@@ -159,6 +166,7 @@ function homeView() {
         <div class="pin intro"><div class="pin-img" style="background:#F6E3C8;min-height:160px"><span class="pin-ph">${icon.source}</span></div><div class="pin-body"><span class="pin-name">Nachprüfen</span><span class="pin-meta">Hinter jeder Angabe steckt ein „Quelle“-Knopf mit Link und Lizenz.</span></div></div>
       </div>`}
   </div>`;
+  view.querySelector('.page').insertAdjacentHTML('beforeend', legalNav());
   bindSearch(view);
   current.actions.clearHist = () => { store.clearHistory(); route(); };
 }
@@ -301,7 +309,8 @@ function renderProduct(result) {
       <footer class="detail-foot">
         <button type="button" class="btn btn-ghost" data-action="allSources">Alle Quellen dieser Seite</button>
         <a class="btn btn-ghost" href="${safeUrl(`${src.base}/product/${encodeURIComponent(p.code)}`)}" target="_blank" rel="noopener">Angaben bei ${esc(src.name)} ergänzen ${icon.ext}</a>
-        <p class="muted small">Daten: ${esc(src.name)} und Mitwirkende, lizenziert unter <a href="${LICENSES.odbl.url}" target="_blank" rel="noopener">ODbL</a>. Angaben ohne Gewähr – maßgeblich ist die Verpackung.</p>
+        <p class="muted small">Daten: ${esc(src.name)} und Mitwirkende, lizenziert unter <a href="${LICENSES.odbl.url}" target="_blank" rel="noopener">ODbL</a>. Angaben ohne Gewähr – maßgeblich ist die Verpackung. Keine medizinische oder Ernährungsberatung.</p>
+        ${legalNav()}
       </footer>
     </div>
   </article>`;
@@ -365,7 +374,7 @@ function panelIngredients(p, src) {
     ${box('Allergene & Spuren', 'allergens', allergens.length || traces.length ? `
       ${allergens.length ? `<p><strong>Enthält:</strong> <span data-tax="allergens">${allergens.map((t) => `<span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span>`).join(', ')}</span></p>` : ''}
       ${traces.length ? `<p><strong>Kann Spuren enthalten von:</strong> ${traces.map((t) => `<span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span>`).join(', ')}</p>` : ''}`
-      : '<p class="muted">Keine Allergene erfasst. Das heißt nicht, dass keine enthalten sind – bitte die Verpackung prüfen.</p>')}
+      : '<p class="muted">Keine Allergene erfasst. Das heißt nicht, dass keine enthalten sind – bitte die Verpackung prüfen.</p>', '<p class="src-note small">Bei Allergien und Unverträglichkeiten verlasse dich nie allein auf diese Angaben – maßgeblich ist die Zutatenliste auf der Verpackung.</p>')}
     ${box(`Zusatzstoffe (${additives.length})`, 'additives', additives.length
       ? `<ul class="rows" id="additives">${additives.map((t) => `<li><span class="ing"><span class="tx" data-tag="${esc(t)}">${esc(prettyTag(t))}</span>${wikiLink(t, prettyTag(t), 'additives')}</span><span class="muted small add-class" data-class-for="${esc(t)}"></span></li>`).join('')}</ul>`
       : '<p class="muted">Keine Zusatzstoffe erkannt.</p>', additives.length ? wikiNote : '')}
@@ -614,7 +623,23 @@ async function scanView() {
     location.hash = `#/produkt/${code}`;
   };
 
+  // Einwilligung, bevor die Erkennungs-Software von jsDelivr geladen wird (nur Browser ohne eingebaute Erkennung)
+  const needsConsent = () => caps.engine === 'zxing' && !store.hasZxingConsent();
+  const askConsent = (then) => {
+    status.textContent = '';
+    $('.scan-start').hidden = true;
+    msg.innerHTML = `<section class="err err-info consent" role="dialog" aria-labelledby="consent-h">
+      <div class="err-head"><span class="err-icon">${icon.info}</span><h2 id="consent-h">Barcode-Erkennung laden?</h2></div>
+      <p>${esc(caps.browser.name)} hat keine eingebaute Barcode-Erkennung. Pur. lädt dafür einmalig die freie Software ZXing vom Dienst <strong>jsDelivr</strong>. Dabei werden deine IP-Adresse und Browserdaten an jsDelivr übermittelt. Die Kamerabilder bleiben auf deinem Gerät.</p>
+      <p class="muted small">Du kannst die Einwilligung jederzeit in der <a href="#/datenschutz">Datenschutzerklärung</a> widerrufen. Ohne Einwilligung kannst du die Nummer eintippen.</p>
+      <div class="err-actions"><button type="button" class="btn btn-primary" data-action="consentYes">Zustimmen &amp; laden</button><button type="button" class="btn btn-ghost" data-action="consentNo">Lieber Nummer eintippen</button></div>
+    </section>`;
+    current.actions.consentYes = () => { store.setZxingConsent(true); msg.innerHTML = ''; then(); };
+    current.actions.consentNo = () => { msg.innerHTML = ''; showStart(''); $('#manual-code').focus(); };
+  };
+
   const startLive = async () => {
+    if (needsConsent()) { askConsent(startLive); return; }
     msg.innerHTML = '';
     $('.scan-start').hidden = true;
     status.textContent = caps.engine === 'zxing' ? 'Lade Barcode-Erkennung (ZXing) …' : 'Starte Kamera …';
@@ -648,6 +673,10 @@ async function scanView() {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
+    if (needsConsent()) { askConsent(() => handlePhoto(file)); return; }
+    handlePhoto(file);
+  });
+  const handlePhoto = async (file) => {
     stopAll();
     msg.innerHTML = '';
     status.textContent = 'Werte Foto aus …';
@@ -660,7 +689,7 @@ async function scanView() {
       current.retry = () => $('#photo').click();
       showError(err, { actions: [{ label: 'Neues Foto', action: 'photo' }] });
     }
-  });
+  };
 
   // Browserabhängiger Einstieg
   if (!caps.secure) { status.textContent = ''; showError(new AppError('CAMERA_INSECURE_CONTEXT')); return; }
@@ -704,10 +733,35 @@ function sourcesView() {
     ${box('Barcode-Erkennung', null, `<ul class="rows rows-stack">
       <li><a href="https://developer.mozilla.org/de/docs/Web/API/Barcode_Detection_API" target="_blank" rel="noopener"><strong>BarcodeDetector-API</strong> ${icon.ext}</a><span class="muted small">eingebaut in Chrome/Edge/Samsung Internet (Android)</span></li>
       <li><a href="https://github.com/Sec-ant/barcode-detector" target="_blank" rel="noopener"><strong>barcode-detector + ZXing-C++</strong> ${icon.ext}</a><span class="muted small">für Safari/iOS, Firefox u. a. · MIT / Apache 2.0</span></li></ul>`)}
-    ${box('Datenschutz', null, `<p>Kamerabilder werden nur auf deinem Gerät ausgewertet und nie übertragen. Merkliste und Verlauf liegen nur im Speicher deines Browsers. Suchanfragen gehen direkt an die genannten Datenbanken. Es gibt kein Tracking.</p>`)}
+    ${box('Datenschutz', null, `<p>Kamerabilder werden nur auf deinem Gerät ausgewertet und nie übertragen. Merkliste und Verlauf liegen nur im Speicher deines Browsers. Suchanfragen gehen direkt an die genannten Datenbanken. Es gibt kein Tracking. Details: <a href="#/datenschutz">Datenschutzerklärung</a>.</p>`)}
+    ${legalNav()}
   </div>`;
 }
 
 // ---------------------------------------------------------------------------
+// Rechtliches
+function legalView(title, kicker, body) {
+  view.innerHTML = `<div class="page prose legal">
+    <header class="top"><div><p class="kicker">${esc(kicker)}</p><h1 class="display">${esc(title)}</h1></div>
+      <button type="button" class="icon-btn soft" data-action="back" aria-label="Zurück">${icon.back}</button></header>
+    ${body}
+    ${legalNav()}
+  </div>`;
+}
+
+function maybeShowNotice() {
+  if (store.getFlag(NOTICE_KEY) === 'ack') return;
+  if (/^#\/(impressum|datenschutz|nutzung)$/.test(location.hash)) return;
+  openSheet(noticeHtml(), 'Hinweise zur Nutzung');
+  const ack = document.querySelector('[data-ack]');
+  document.querySelector('.sheet-wrap').addEventListener('click', (e) => {
+    if (e.target.closest('[data-ack]') || e.target.closest('a[data-close]')) store.setFlag(NOTICE_KEY, 'ack');
+  }, true);
+  if (ack) ack.focus();
+}
+
+// ---------------------------------------------------------------------------
+if (!legalComplete()) console.warn('Pur.: Impressum unvollständig – bitte js/legal-config.js ausfüllen.');
 updateNet();
 route();
+maybeShowNotice();

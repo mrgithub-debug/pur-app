@@ -1,12 +1,30 @@
-# Netlify: statische Seite ohne Build-Schritt
+# Netlify: statische Seite ohne Build-Schritt.
+# Der "Build" prüft nur, ob das Impressum vollständig ist – sonst wird nicht veröffentlicht.
 [build]
   publish = "."
-  command = ""
+  command = "node scripts/check-legal.mjs"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Entwicklungsdateien nicht öffentlich ausliefern
+[[redirects]]
+  from = "/tests/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/scripts/*"
+  to = "/404.html"
+  status = 404
+  force = true
 
 [[headers]]
   for = "/*"
   [headers.values]
-    # Kamera nur für diese Seite selbst erlauben
+    # Nur die in der Datenschutzerklärung genannten Dienste sind erreichbar
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://fastly.jsdelivr.net https://cdn.jsdelivr.net 'wasm-unsafe-eval'; connect-src 'self' https://*.openfoodfacts.org https://*.openbeautyfacts.org https://*.openpetfoodfacts.org https://*.openproductsfacts.org https://www.wikidata.org https://fastly.jsdelivr.net https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.openfoodfacts.org https://*.openbeautyfacts.org https://*.openpetfoodfacts.org https://*.openproductsfacts.org; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Content-Type-Options = "nosniff"

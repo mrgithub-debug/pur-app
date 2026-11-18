@@ -10,8 +10,7 @@ import { checksumOk, upcEtoA } from './barcode.js';
 export const PRODUCT_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
 export const POLYFILL_URLS = [
   'https://fastly.jsdelivr.net/npm/barcode-detector@3/dist/es/ponyfill.min.js',
-  'https://cdn.jsdelivr.net/npm/barcode-detector@3/dist/es/ponyfill.min.js',
-  'https://esm.sh/barcode-detector@3/ponyfill'
+  'https://cdn.jsdelivr.net/npm/barcode-detector@3/dist/es/ponyfill.min.js'
 ];
 
 /** Ermittelt, was dieser Browser kann. */

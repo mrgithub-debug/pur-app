@@ -48,6 +48,7 @@
       }
       return res(404, {});
     };
+    if (new URLSearchParams(location.search).get('ack')) localStorage.setItem('pp.notice.v1', 'ack');
     await import('../js/main.js');
     const tab = new URLSearchParams(location.search).get('tab');
     const click = new URLSearchParams(location.search).get('click');

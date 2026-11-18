@@ -56,3 +56,25 @@ export function addHistory(item) {
   write(HISTORY, list.slice(0, 30));
 }
 export function clearHistory() { write(HISTORY, []); }
+
+// Einwilligung zum Laden der Barcode-Erkennung von jsDelivr (Art. 6 Abs. 1 lit. a DSGVO)
+const CONSENT = 'pp.consent.zxing.v1';
+let consentMem = false;
+export function hasZxingConsent() {
+  try { if (storageAvailable()) return localStorage.getItem(CONSENT) === 'yes'; } catch { /* ignorieren */ }
+  return consentMem;
+}
+export function setZxingConsent(on) {
+  consentMem = on;
+  try { if (storageAvailable()) { if (on) localStorage.setItem(CONSENT, 'yes'); else localStorage.removeItem(CONSENT); } } catch { /* ignorieren */ }
+}
+export function getFlag(key) { try { return storageAvailable() ? localStorage.getItem(key) : mem['flag:' + key] || null; } catch { return null; } }
+export function setFlag(key, v) { mem['flag:' + key] = v; try { if (storageAvailable()) localStorage.setItem(key, v); } catch { /* ignorieren */ } }
+/** Löscht alle von Pur. lokal gespeicherten Daten. */
+export function clearAll() {
+  consentMem = false;
+  for (const k of Object.keys(mem)) delete mem[k];
+  try {
+    if (storageAvailable()) Object.keys(localStorage).filter((k) => k.startsWith('pp.')).forEach((k) => localStorage.removeItem(k));
+  } catch { /* ignorieren */ }
+}

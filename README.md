@@ -84,3 +84,15 @@ Tests: `npm test` (Node ≥ 18). `tests/harness.html` zeigt die Oberfläche mit 
 - Die Daten stammen aus Gemeinschaftsprojekten und können unvollständig sein. Maßgeblich ist immer die Verpackung.
 - Der Green-Score und die CO₂-Werte beruhen auf der Ökobilanz der *Produktkategorie* (Agribalyse), nicht auf einer Messung des einzelnen Produkts.
 - Das GS1-Präfix zeigt das Land der Barcode-Registrierung, **nicht** das Herkunftsland.
+
+## Rechtliches
+
+- **Impressum, Datenschutzerklärung, Nutzungshinweise & Haftung** sind in der App unter `#/impressum`, `#/datenschutz` und `#/nutzung` zu finden. Die Texte stehen in `js/legal.js`, die Angaben der Anbieterin in `js/legal-config.js`.
+- **Sperre vor dem Veröffentlichen:** Netlify führt `scripts/check-legal.mjs` aus. Sind Name, Anschrift oder E-Mail in `js/legal-config.js` leer, bricht die Veröffentlichung ab.
+- **Datensparsamkeit:**
+  - keine Google Fonts, es werden Systemschriften genutzt
+  - keine Cookies, kein Tracking
+  - ZXing wird erst nach ausdrücklicher Einwilligung von jsDelivr geladen, und die Einwilligung lässt sich widerrufen
+  - eine Content-Security-Policy erlaubt nur die in der Datenschutzerklärung genannten Dienste
+- Beim ersten Start erscheint ein Hinweis: Daten ohne Gewähr, maßgeblich ist die Verpackung, keine Beratung.
+- Die Texte sind sorgfältig erstellt, ersetzen aber keine Rechtsberatung.
