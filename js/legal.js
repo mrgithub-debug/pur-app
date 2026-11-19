@@ -1,15 +1,34 @@
 // Rechtstexte: Impressum, Datenschutzerklärung, Nutzungshinweise & Haftung, Erststart-Hinweis.
 // Hinweis für die Anbieterin: Diese Texte sind sorgfältig erstellt, ersetzen aber keine Rechtsberatung.
-import { LEGAL, legalComplete } from './legal-config.js';
+import { LEGAL, legalComplete, isFamily } from './legal-config.js';
 import { esc } from './ui.js';
 
 const L = LEGAL;
 const addr = () => [L.company, L.name, L.street, `${L.zip} ${L.city}`.trim(), L.country].filter((x) => String(x || '').trim()).map(esc).join('<br>');
-const mail = () => (L.email ? `<a href="mailto:${esc(L.email)}">${esc(L.email)}</a>` : '<em>[E-Mail-Adresse fehlt]</em>');
-const incomplete = () => (legalComplete() ? '' : `<section class="err err-warning" role="alert"><div class="err-head"><h2>Impressum unvollständig</h2></div><p>Die Angaben der Anbieterin sind noch nicht eingetragen (Datei <code>js/legal-config.js</code>). Die App darf so nicht öffentlich betrieben werden.</p></section>`);
-export const legalNav = () => `<nav class="legal-links" aria-label="Rechtliches"><a href="#/impressum">Impressum</a><a href="#/datenschutz">Datenschutz</a><a href="#/nutzung">Nutzungshinweise</a></nav>`;
+const mail = () => (isFamily() && !L.email ? 'direkt innerhalb der Familie' : L.email ? `<a href="mailto:${esc(L.email)}">${esc(L.email)}</a>` : '<em>[E-Mail-Adresse fehlt]</em>');
+const incomplete = () => (isFamily() || legalComplete() ? '' : `<section class="err err-warning" role="alert"><div class="err-head"><h2>Impressum unvollständig</h2></div><p>Die Angaben der Anbieterin sind noch nicht eingetragen (Datei <code>js/legal-config.js</code>). Die App darf so nicht öffentlich betrieben werden.</p></section>`);
+export const legalNav = () => `<nav class="legal-links" aria-label="Rechtliches"><a href="#/impressum">${isFamily() ? 'Über diese Seite' : 'Impressum'}</a><a href="#/datenschutz">Datenschutz</a><a href="#/nutzung">Nutzungshinweise</a></nav>`;
+
+export const FAMILY_BADGE = () => (isFamily() ? '<p class="family-badge"><span aria-hidden="true">●</span> Private Familienseite – nicht öffentlich</p>' : '');
+
+function familyHtml() {
+  return `<section class="family-box">
+    <h2>Private Familienseite</h2>
+    <p>Pur. ist ein <strong>rein privates, nicht geschäftliches Projekt</strong>, das ausschließlich innerhalb der Familie genutzt wird.</p>
+  </section>
+  <ul>
+    <li>Die Seite ist <strong>nicht öffentlich zugänglich</strong>: Jeder Aufruf ist durch ein Familienpasswort geschützt, das nur innerhalb der Familie weitergegeben wird.</li>
+    <li>Sie wird nicht beworben, nicht verlinkt und ist für Suchmaschinen gesperrt.</li>
+    <li>Es gibt keine Werbung, keine Einnahmen, keine Nutzerkonten und keine kommerziellen Interessen.</li>
+  </ul>
+  <p>Da es sich um eine ausschließlich persönliche bzw. familiäre Seite handelt, die nicht geschäftsmäßig und nicht öffentlich angeboten wird, wird kein Impressum nach § 5 DDG bzw. § 18 MStV geführt.</p>
+  <p><strong>Bitte gib den Zugang nicht an Personen außerhalb der Familie weiter.</strong> Fragen, Hinweise und Fehlermeldungen bitte direkt an die Person in der Familie, die dir den Zugang gegeben hat.</p>
+  <h2>Inhalte Dritter</h2>
+  <p>Pur. zeigt automatisch Daten aus offenen Datenbanken an (siehe <a href="#/quellen">Quellen &amp; Lizenzen</a>). Diese Inhalte werden nicht selbst erstellt oder geprüft; es gelten die <a href="#/nutzung">Nutzungshinweise</a>.</p>`;
+}
 
 export function impressumHtml() {
+  if (isFamily()) return familyHtml();
   return `${incomplete()}
   <h2>Angaben gemäß § 5 DDG</h2>
   <p>${addr() || '<em>[Name und Anschrift fehlen]</em>'}</p>
@@ -27,6 +46,7 @@ export function impressumHtml() {
 export function nutzungHtml() {
   return `<p class="muted small">Stand: ${esc(L.updated)}</p>
   <h2>1. Was Pur. ist – und was nicht</h2>
+  ${isFamily() ? '<p><strong>Pur. ist eine private Familienseite</strong> – ein nicht geschäftliches Hobbyprojekt, das nur innerhalb der Familie genutzt wird und nicht öffentlich zugänglich ist.</p>' : ''}
   <p>Pur. ist ein kostenloses Informationsangebot. Die App zeigt Angaben zu Produkten an, die aus öffentlich zugänglichen, von Freiwilligen gepflegten Datenbanken stammen (insbesondere Open Food Facts, Open Beauty Facts, Open Pet Food Facts, Open Products Facts, Wikidata und Wikipedia). Pur. erstellt keine eigenen Bewertungen, prüft keine Produkte und nutzt keine künstliche Intelligenz.</p>
   <p><strong>Pur. ist keine medizinische, ernährungswissenschaftliche, allergologische, rechtliche oder sonstige fachliche Beratung</strong> und ersetzt diese nicht. Dies gilt insbesondere bei Allergien und Unverträglichkeiten, in Schwangerschaft und Stillzeit, für Säuglinge und Kinder, bei Erkrankungen oder der Einnahme von Medikamenten. Wende dich in diesen Fällen an Ärztinnen, Ärzte, Apotheken oder andere Fachleute.</p>
   <h2>2. Keine Gewähr für Daten Dritter</h2>
@@ -49,9 +69,10 @@ export function nutzungHtml() {
 export function datenschutzHtml() {
   return `${incomplete()}<p class="muted small">Stand: ${esc(L.updated)}</p>
   <h2>1. Verantwortliche</h2>
-  <p>${addr() || '<em>[Name und Anschrift fehlen]</em>'}<br>E-Mail: ${mail()}</p>
+  ${isFamily() ? '<p>Pur. ist eine private Familienseite. Verantwortlich ist das Familienmitglied, das diese Seite betreibt und dir den Zugang gegeben hat. Für Fragen zum Datenschutz wende dich bitte direkt an diese Person.</p>' : `<p>${addr() || '<em>[Name und Anschrift fehlen]</em>'}<br>E-Mail: ${mail()}</p>`}
   <h2>2. Das Wichtigste in Kürze</h2>
   <ul>
+    ${isFamily() ? '<li>Private Familienseite: Zugang nur mit Familienpasswort. Das Passwort wird bei jedem Aufruf vom Server geprüft und nicht protokolliert.</li>' : ''}
     <li>Kein Konto, keine Cookies, kein Tracking, keine Analyse- oder Werbedienste.</li>
     <li>Kamerabilder werden ausschließlich auf deinem Gerät ausgewertet und nie übertragen.</li>
     <li>Merkliste und Verlauf liegen nur im Speicher deines Browsers.</li>
@@ -82,11 +103,12 @@ export const NOTICE_KEY = 'pp.notice.v1';
 export function noticeHtml() {
   return `<p class="sheet-kicker">Willkommen bei Pur.</p><h2 class="sheet-title">Bevor du loslegst</h2>
   <ul class="notice-list">
+    ${isFamily() ? '<li><strong>Private Familienseite</strong> – nur für Familienmitglieder. Bitte gib den Zugang nicht weiter.</li>' : ''}
     <li>Pur. zeigt Daten aus <strong>offenen, von Freiwilligen gepflegten Datenbanken</strong> – ohne Gewähr auf Richtigkeit und Vollständigkeit.</li>
     <li><strong>Maßgeblich ist immer die Verpackung.</strong> Besonders bei Allergien und Unverträglichkeiten.</li>
     <li>Pur. ist <strong>keine medizinische oder Ernährungsberatung</strong>. Bewertungen stammen von Dritten.</li>
     <li>Kein Konto, kein Tracking. Für Produktdaten ruft dein Browser die Datenbanken direkt ab.</li>
   </ul>
-  <p class="muted small">Mehr dazu: <a href="#/nutzung" data-close>Nutzungshinweise</a> · <a href="#/datenschutz" data-close>Datenschutz</a> · <a href="#/impressum" data-close>Impressum</a></p>
+  <p class="muted small">Mehr dazu: <a href="#/nutzung" data-close>Nutzungshinweise</a> · <a href="#/datenschutz" data-close>Datenschutz</a> · <a href="#/impressum" data-close>${isFamily() ? 'Über diese Seite' : 'Impressum'}</a></p>
   <button type="button" class="btn btn-primary" data-close data-ack>Verstanden</button>`;
 }

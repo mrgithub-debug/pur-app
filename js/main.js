@@ -8,8 +8,8 @@ import * as store from './store.js';
 import * as scan from './scanner.js';
 import { permissionHelp } from './browser.js';
 import { esc, safeUrl, icon, citeBtn, errorCard, openSheet, closeSheet, citationHtml, toast, GRADE_COLORS, gradeLabel, pinCard } from './ui.js';
-import { impressumHtml, datenschutzHtml, nutzungHtml, legalNav, noticeHtml, NOTICE_KEY } from './legal.js';
-import { legalComplete } from './legal-config.js';
+import { impressumHtml, datenschutzHtml, nutzungHtml, legalNav, noticeHtml, NOTICE_KEY, FAMILY_BADGE } from './legal.js';
+import { legalComplete, isFamily } from './legal-config.js';
 import { prettyTag, tagName, ANALYSIS, NOVA, NUTRIENTS, LCA_STAGES, GREEN_ADJ, MISSING, num } from './labels.js';
 
 const view = document.getElementById('view');
@@ -28,7 +28,7 @@ const routes = [
   [/^#\/scan$/, scanView],
   [/^#\/merkliste$/, savedView],
   [/^#\/quellen$/, sourcesView],
-  [/^#\/impressum$/, () => legalView('Impressum', 'Rechtliches', impressumHtml())],
+  [/^#\/impressum$/, () => legalView(isFamily() ? 'Über diese Seite' : 'Impressum', 'Rechtliches', impressumHtml())],
   [/^#\/datenschutz$/, () => legalView('Datenschutz', 'Rechtliches', datenschutzHtml())],
   [/^#\/nutzung$/, () => legalView('Nutzungshinweise & Haftung', 'Rechtliches', nutzungHtml())]
 ];
@@ -150,7 +150,7 @@ function homeView() {
   const hist = store.getHistory();
   view.innerHTML = `<div class="page">
     <header class="top">
-      <div><p class="wordmark">Pur<span>.</span></p><h1 class="display">Nur das, was drin ist.</h1><p class="kicker">Inhaltsstoffe, Umwelt &amp; Lieferkette – mit offenen Daten</p></div>
+      <div><p class="wordmark">Pur<span>.</span></p><h1 class="display">Nur das, was drin ist.</h1><p class="kicker">Inhaltsstoffe, Umwelt &amp; Lieferkette – mit offenen Daten</p>${FAMILY_BADGE()}</div>
       <a class="icon-btn soft" href="#/quellen" aria-label="Quellen und Informationen">${icon.info}</a>
     </header>
     ${searchForm()}
@@ -761,7 +761,7 @@ function maybeShowNotice() {
 }
 
 // ---------------------------------------------------------------------------
-if (!legalComplete()) console.warn('Pur.: Impressum unvollständig – bitte js/legal-config.js ausfüllen.');
+if (!isFamily() && !legalComplete()) console.warn('Pur.: Impressum unvollständig – bitte js/legal-config.js ausfüllen.');
 updateNet();
 route();
 maybeShowNotice();

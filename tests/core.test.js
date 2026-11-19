@@ -124,3 +124,18 @@ test('Wikipedia: Taxonomie → Wikidata → Artikel (de bevorzugt, en als Rückf
   assert.equal(links.Q2.lang, 'en');
   assert.match(wikipediaSearchUrl('Hafer (10 %)'), /search=Hafer&/);
 });
+
+test('Familien-Zugang: Passwortprüfung serverseitig, gesperrt ohne Passwort', async () => {
+  const gate = await import('../netlify/edge-functions/family-gate.js');
+  const req = (auth) => new Request('https://x/', { headers: auth ? { authorization: auth } : {} });
+  const ctx = { next: async () => new Response('app', { status: 200 }) };
+  globalThis.Netlify = { env: { get: () => '' } };
+  assert.equal((await gate.default(req(), ctx)).status, 503);           // nicht eingerichtet → gesperrt
+  globalThis.Netlify = { env: { get: () => 'geheim-familie-123' } };
+  assert.equal((await gate.default(req(), ctx)).status, 401);           // ohne Passwort
+  assert.equal((await gate.default(req('Basic ' + btoa('familie:falsch')), ctx)).status, 401);
+  const ok = await gate.default(req('Basic ' + btoa('familie:geheim-familie-123')), ctx);
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers.get('x-robots-tag'), /noindex/);
+  assert.equal(gate.passwordFrom('Basic ' + btoa('a:b:c')), 'b:c');
+});
