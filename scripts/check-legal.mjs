@@ -9,8 +9,11 @@ const stop = (msg) => { console.error(`\n✖ Veröffentlichung gestoppt: ${msg}\
 if (LEGAL.mode === 'family') {
   const gate = 'netlify/edge-functions/family-gate.js';
   if (!existsSync(gate) || !readFileSync(gate, 'utf8').includes('FAMILY_ACCESS')) stop(`Familienmodus ohne Passwortschutz (${gate} fehlt).`);
-  if (process.env.NETLIFY && String(process.env.FAMILY_ACCESS || '').length < 10) {
-    stop('Familienmodus: Die Umgebungsvariable FAMILY_ACCESS (Familienpasswort, mind. 10 Zeichen) ist in Netlify nicht gesetzt.');
+  if (process.env.NETLIFY) {
+    const pw = String(process.env.FAMILY_ACCESS || '');
+    if (!pw) stop('Familienmodus: Die Umgebungsvariable FAMILY_ACCESS (Familienpasswort) ist für den Build nicht sichtbar. Prüfe in Netlify, ob ihr Scope „Builds“ enthält.');
+    if (pw.trim() !== pw) stop('Familienmodus: Das Familienpasswort in FAMILY_ACCESS beginnt oder endet mit einem Leerzeichen. Bitte ohne Leerzeichen am Anfang/Ende speichern.');
+    if (pw.length < 10) stop('Familienmodus: Das Familienpasswort in FAMILY_ACCESS ist kürzer als 10 Zeichen. Bitte ein längeres Passwort hinterlegen.');
   }
   console.log('✔ Private Familienseite: Passwortschutz aktiv – Veröffentlichung freigegeben.');
 } else {
